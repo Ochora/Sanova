@@ -6,6 +6,7 @@ import { isValidDateKey } from '../lib/dates';
 import { splitList, uid } from '../lib/id';
 import { ensurePermission, scheduleCheckInReminder } from '../lib/notifications';
 import { useStore } from '../lib/store';
+import { pickAndConfirmBundle } from '../ui/importFlow';
 import type { Sex } from '../lib/types';
 import { Button, Chip, ChipRow, Field, Notice, Screen } from '../ui/components';
 import { colors, space, type } from '../ui/theme';
@@ -21,7 +22,7 @@ const BLOOD = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', "Don't know"];
 const STEPS = 5;
 
 export default function Onboarding() {
-  const { update } = useStore();
+  const { update, importProfile } = useStore();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [dob, setDob] = useState('');
@@ -109,6 +110,20 @@ export default function Onboarding() {
               Sanova gives guidance, not a diagnosis. Always follow the advice of a health worker.
             </Notice>
             <Button title="Get started" onPress={() => setStep(1)} />
+            <Button
+              title="I have a Sanova file from my parent or guardian"
+              variant="ghost"
+              icon="document-attach"
+              onPress={async () => {
+                const bundle = await pickAndConfirmBundle('self');
+                if (!bundle) return;
+                importProfile(bundle, true);
+                const granted = await ensurePermission();
+                if (granted) await scheduleCheckInReminder(true);
+                router.replace('/');
+              }}
+              style={{ marginTop: space(2) }}
+            />
           </View>
         )}
 

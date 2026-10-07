@@ -5,12 +5,13 @@ import { adherence, dosesForDay } from '../lib/adherence';
 import { ageInYears, toDateKey } from '../lib/dates';
 import { initials } from '../lib/id';
 import { useStore } from '../lib/store';
+import { pickAndConfirmBundle } from '../ui/importFlow';
 import { LEVEL_META } from '../lib/triage';
 import { Button, Card, Notice, Pill, Screen, SectionTitle } from '../ui/components';
 import { colors, space, type } from '../ui/theme';
 
 export default function Family() {
-  const { data } = useStore();
+  const { data, importProfile } = useStore();
   const today = toDateKey();
   const now = new Date();
 
@@ -70,17 +71,30 @@ export default function Family() {
               </View>
             )}
             {m.relationship !== 'self' && (
-              <Button small variant="ghost" icon="share-social" title="Share update" onPress={share} style={{ alignSelf: 'flex-start', paddingHorizontal: 0, marginTop: 4 }} />
+              <View style={{ flexDirection: 'row', gap: 4, marginTop: 4 }}>
+                <Button small variant="ghost" icon="share-social" title="Share update" onPress={share} style={{ paddingHorizontal: 0, marginRight: 12 }} />
+                <Button small variant="ghost" icon="swap-horizontal" title="Transfer profile" onPress={() => router.push({ pathname: '/share', params: { memberId: m.id } })} style={{ paddingHorizontal: 0 }} />
+              </View>
             )}
           </Card>
         );
       })}
 
       <Button title="Add family member" icon="person-add" onPress={() => router.push('/member-form')} />
+      <Button
+        title="Add from a Sanova file"
+        variant="secondary"
+        icon="document-attach"
+        onPress={async () => {
+          const bundle = await pickAndConfirmBundle('family');
+          if (bundle) importProfile(bundle, false, bundle.member.relationship === 'self' ? 'Other' : bundle.member.relationship);
+        }}
+        style={{ marginTop: space(2) }}
+      />
 
       <SectionTitle>Coming next</SectionTitle>
       <Text style={type.small}>
-        Linking two phones (so a caregiver gets an alert on their own phone when a dose is missed) needs the Sanova cloud service, planned for the next release. For now, use "Share update" to send a summary by WhatsApp or SMS.
+        Linking two phones (so a caregiver gets an alert on their own phone when a dose is missed) needs the Sanova cloud service, planned for the next release. For now, use "Share update" to send a summary by WhatsApp or SMS, and "Transfer profile" to give a child their own records when they get their own phone.
       </Text>
     </Screen>
   );

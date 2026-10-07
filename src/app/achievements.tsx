@@ -9,7 +9,7 @@ import { colors, radius, space, type } from '../ui/theme';
 
 export default function Achievements() {
   const { data, self } = useStore();
-  const streak = checkInStreak(data.checkIns, self?.id);
+  const streak = checkInStreak(data.checkIns, self?.id, data.moodLogs);
   const meds = medicineStreak(data.medications.filter((m) => m.memberId === self?.id), data.doseLogs);
   const total = data.checkIns.filter((c) => c.memberId === self?.id).length;
   const next = nextBadge(streak.current);

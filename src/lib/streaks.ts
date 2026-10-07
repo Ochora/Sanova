@@ -1,6 +1,6 @@
 import { dosesForDay } from './adherence';
 import { addDays, toDateKey } from './dates';
-import type { CheckIn, DoseLog, Medication } from './types';
+import type { CheckIn, DoseLog, Medication, MoodLog } from './types';
 
 export interface StreakInfo {
   /** Consecutive days up to today (or up to yesterday if today isn't done yet). */
@@ -48,8 +48,17 @@ export function streakFromDays(days: Set<string>, today: string = toDateKey()): 
   return { current, best: Math.max(bestRun(days), current), doneToday, atRisk: !doneToday && current > 0, week };
 }
 
-export function checkInStreak(checkIns: CheckIn[], memberId: string | undefined, today?: string): StreakInfo {
-  const days = new Set(checkIns.filter((c) => c.memberId === memberId).map((c) => c.date));
+/** A day counts when the person did any check-in that day — body or mind. */
+export function checkInStreak(
+  checkIns: CheckIn[],
+  memberId: string | undefined,
+  moodLogs: MoodLog[] = [],
+  today?: string,
+): StreakInfo {
+  const days = new Set([
+    ...checkIns.filter((c) => c.memberId === memberId).map((c) => c.date),
+    ...moodLogs.filter((c) => c.memberId === memberId).map((c) => c.date),
+  ]);
   return streakFromDays(days, today);
 }
 

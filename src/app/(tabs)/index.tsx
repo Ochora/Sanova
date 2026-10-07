@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { dosesForDay } from '../../lib/adherence';
 import { formatTime12, greeting, toDateKey } from '../../lib/dates';
 import { useStore } from '../../lib/store';
+import { kindForNow } from '../../lib/mind';
 import { checkInStreak, medicineStreak, streakMessage } from '../../lib/streaks';
 import { Button, Card, Notice, Screen, SectionTitle, type IconName } from '../../ui/components';
 import { SOSButton } from '../../ui/SOSButton';
@@ -38,7 +39,9 @@ export default function Home() {
   const memberName = (id: string) => data.members.find((m) => m.id === id);
 
   const myCheckIn = [...data.checkIns].reverse().find((c) => c.memberId === self?.id && c.date === today);
-  const streak = checkInStreak(data.checkIns, self?.id);
+  const streak = checkInStreak(data.checkIns, self?.id, data.moodLogs);
+  const mindKind = kindForNow(now);
+  const mindDone = data.moodLogs.some((l) => l.memberId === self?.id && l.date === today && l.kind === mindKind);
   const medStreak = medicineStreak(data.medications.filter((m) => m.memberId === self?.id), data.doseLogs, now);
   const tip = seasonalTip(now.getMonth());
 
@@ -84,6 +87,22 @@ export default function Home() {
         <WeekDots streak={streak} light />
       </Pressable>
 
+      <Pressable
+        onPress={() => router.push({ pathname: '/checkin', params: { mode: 'mind' } })}
+        style={({ pressed }) => [styles.mindCard, pressed && { opacity: 0.9 }]}
+      >
+        <Text style={{ fontSize: 30 }}>{mindKind === 'morning' ? '☀️' : '🌙'}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.mindTitle}>
+            {mindDone ? (mindKind === 'morning' ? 'Mind check done ✓' : 'Day reviewed ✓') : mindKind === 'morning' ? 'Start your day with a mind check' : 'Review your day'}
+          </Text>
+          <Text style={styles.mindSub}>
+            {mindDone ? 'Come back this evening to look back on your day.' : mindKind === 'morning' ? 'How is your mind this morning? 1 minute.' : 'What went well? What weighed on you?'}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.mind} />
+      </Pressable>
+
       <Card style={{ alignItems: 'center', paddingVertical: space(6) }}>
         <SOSButton onTrigger={() => router.push('/emergency')} />
         <Text style={[type.small, { textAlign: 'center', marginTop: space(4) }]}>
@@ -92,6 +111,10 @@ export default function Home() {
         {!data.contacts.length && (
           <Button title="Add an emergency contact" variant="ghost" small icon="person-add" onPress={() => router.push('/profile')} />
         )}
+        <Pressable onPress={() => router.push('/support')} style={styles.notOkay}>
+          <Text style={{ fontSize: 16 }}>💜</Text>
+          <Text style={{ color: colors.mind, fontWeight: '700' }}>Not okay emotionally? Talk to someone</Text>
+        </Pressable>
       </Card>
 
       {missed.length > 0 && (
@@ -172,6 +195,18 @@ const styles = StyleSheet.create({
   link: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   doseRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: space(4) },
   doseBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  mindCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space(3),
+    backgroundColor: colors.mindSoft,
+    borderRadius: radius.lg,
+    padding: space(4),
+    marginBottom: space(3),
+  },
+  mindTitle: { fontSize: 16, fontWeight: '800', color: colors.mind },
+  mindSub: { fontSize: 13, color: colors.text, marginTop: 2 },
+  notOkay: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: space(4), paddingVertical: 8, paddingHorizontal: 14, borderRadius: radius.pill, backgroundColor: colors.mindSoft },
   streakCard: { backgroundColor: colors.primary, borderRadius: radius.lg, padding: space(4), marginBottom: space(3) },
   streakTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
   streakSub: { color: '#CFE8E1', fontSize: 13, marginTop: 2, lineHeight: 18 },

@@ -1,16 +1,17 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { isActiveOn } from '../lib/adherence';
 import { formatTime12, isValidDateKey, isValidTime, normaliseTime, timeToMinutes, toDateKey } from '../lib/dates';
 import { allergyWarnings, interactionWarnings, medicationTips } from '../lib/drugs';
+import { ageInMonths, suggestDose, type DoseSuggestion } from '../lib/dosing';
 import { uid } from '../lib/id';
 import { cancelIds, scheduleMedication } from '../lib/notifications';
 import { useStore } from '../lib/store';
 import type { Medication } from '../lib/types';
 import { Button, Chip, ChipRow, Field, Notice, Screen, SectionTitle } from '../ui/components';
 import { MemberPicker } from '../ui/MemberPicker';
-import { colors, space, type } from '../ui/theme';
+import { colors, radius, space, type } from '../ui/theme';
 
 const FREQ: { label: string; times: string[] }[] = [
   { label: 'Once a day', times: ['08:00'] },
@@ -55,6 +56,36 @@ export default function MedForm() {
     return [...allergyWarnings(name, member?.allergies ?? []), ...interactionWarnings(name, others.map((o) => o.name))];
   }, [name, member, others]);
   const tips = useMemo(() => (name.trim().length >= 3 ? medicationTips(name) : []), [name]);
+  const ageMonths = member?.dob ? ageInMonths(member.dob) : undefined;
+  const suggestion = useMemo(() => (name.trim().length >= 3 ? suggestDose(name, ageMonths) : undefined), [name, ageMonths]);
+  const [autoFilled, setAutoFilled] = useState<string | null>(null);
+  const autoDose = useRef<string | null>(null);
+
+  const applySuggestion = (sg: DoseSuggestion) => {
+    setDose(sg.dose);
+    autoDose.current = sg.dose;
+    if (sg.times?.length) setTimes(sg.times);
+    setDurationDays(sg.durationDays);
+    setCustomDays('');
+    setAutoFilled(`${sg.ingredient}:${ageMonths}`);
+  };
+
+  // New medicine: fill in the standard dose for the person's age automatically (still editable).
+  useEffect(() => {
+    if (existing) return;
+    if (!suggestion || suggestion.needsClinician) {
+      // Don't let a dose auto-filled for a different medicine carry over.
+      if (autoFilled && autoDose.current !== null && dose === autoDose.current) setDose('');
+      if (autoFilled) setAutoFilled(null);
+      autoDose.current = null;
+      return;
+    }
+    const key = `${suggestion.ingredient}:${ageMonths}`;
+    if (autoFilled === key) return;
+    if (dose && !autoFilled) return; // user typed their own dose first
+    applySuggestion(suggestion);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggestion?.ingredient, ageMonths]);
 
   const addTime = () => {
     if (!isValidTime(newTime)) return Alert.alert('Time format', 'Use 24-hour time, e.g. 07:30 or 19:00.');
@@ -139,6 +170,29 @@ export default function MedForm() {
             {t}
           </Notice>
         ))}
+        {suggestion && (
+          <View style={styles.doseCard}>
+            <Text style={[type.label, { color: colors.primary }]}>
+              📏 Standard dose{member?.dob ? ` · age ${ageMonths! < 24 ? `${ageMonths} months` : `${Math.floor(ageMonths! / 12)} years`}` : ''}
+            </Text>
+            {suggestion.needsClinician ? (
+              <Text style={[type.body, { marginTop: 4 }]}>{suggestion.note}</Text>
+            ) : (
+              <>
+                <Text style={[type.h3, { marginTop: 4 }]}>{suggestion.dose}</Text>
+                <Text style={type.body}>{suggestion.howOften}</Text>
+                {suggestion.note ? <Text style={[type.small, { marginTop: 4 }]}>{suggestion.note}</Text> : null}
+                {autoFilled === `${suggestion.ingredient}:${ageMonths}` && dose === suggestion.dose ? (
+                  <Text style={[type.small, { marginTop: 6, color: colors.success, fontWeight: '600' }]}>
+                    ✓ Filled in below. If your prescription says something different, change it — the prescription always wins.
+                  </Text>
+                ) : (
+                  <Button small icon="flash" title="Use this standard dose" onPress={() => applySuggestion(suggestion)} style={{ alignSelf: 'flex-start', marginTop: space(2) }} />
+                )}
+              </>
+            )}
+          </View>
+        )}
         <Field label="Dose" value={dose} onChangeText={setDose} placeholder="e.g. 1 tablet, 500 mg, 5 ml" />
 
         <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 6 }}>How often</Text>
@@ -200,3 +254,7 @@ export default function MedForm() {
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  doseCard: { backgroundColor: colors.primarySoft, borderRadius: radius.md, padding: space(4), marginBottom: space(4) },
+});

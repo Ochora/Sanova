@@ -104,7 +104,7 @@ describe('drugs', () => {
     expect(ingredientsOf('Coartem 80/480')).toContain('artemether-lumefantrine');
     expect(ingredientsOf('TLD')).toContain('dolutegravir');
     expect(ingredientsOf('Septrin 960mg')).toContain('cotrimoxazole');
-    expect(ingredientsOf('oral rehydration')).toEqual([]);
+    expect(ingredientsOf('Vitamin C')).toEqual([]);
   });
   it('flags well-known interactions', () => {
     const w = interactionWarnings('Rifampicin', ['TLD (tenofovir/lamivudine/dolutegravir)']);

@@ -17,6 +17,10 @@ Sanova is the mobile app from the *Afya360 Product & Systems Design Document*, b
 | **Records vault** | Photograph or pick lab results, prescriptions, discharge summaries, X-rays, vaccination cards; categorised, dated, stored privately in the app; share with a health worker. |
 | **Emergency health card** | QR code (readable by any phone camera, offline) with name, blood group, allergies, conditions, current medicines and contacts — you choose which fields. |
 | **Health costs** | Log spending in UGX by category and person; monthly total, 6-month chart, category breakdown, simple insight. |
+| **Mind (v0.3)** | Morning "start my day" and evening "review my day" check-ins: mood, feelings, sleep/stress, intention, gratitude. Optional weekly PHQ-2/GAD-2 deeper check with a caring safety question. Counts toward the streak. |
+| **"I'm not okay" support** | From Home, SOS, More and mind results: text/WhatsApp/call your contacts with a ready message, free counselling lines (Mental Health Uganda 0800 21 21 21, Butabika 0800 211 306, Sauti 116, FIDA), chat with Sanova (Claude-powered when an API key is set in Settings, offline listener otherwise), breathing and 5-4-3-2-1 grounding. |
+| **Standard doses** | Typing Coartem, paracetamol, amoxicillin, albendazole, zinc, ORS or cotrimoxazole fills in the WHO/Uganda standard dose for the person's age (editable; the prescription wins). Infants and weight-dependent ages are referred to a clinician. |
+| **Share & transfer** | Share a health summary (never includes mental-health data) to anyone or straight to an emergency contact; export one person's full profile as a .sanova file and import it at sign-up ("I have a Sanova file") or into Family. |
 | **Settings** | Fingerprint/face app lock (SOS still callable while locked), reminders on/off, test notification, export all data (JSON), delete all data. |
 
 ## Test it on an Android phone (quickest — Expo Go)

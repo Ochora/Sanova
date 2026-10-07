@@ -2,7 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { upsertLog } from './adherence';
 import { toDateKey } from './dates';
+import { writeImportedPhotos } from './files';
 import { uid } from './id';
+import { importBundle, type SanovaBundle } from './portable';
 import type {
   AppData,
   CheckIn,
@@ -13,6 +15,7 @@ import type {
   HealthRecord,
   Medication,
   Member,
+  MoodLog,
   Settings,
 } from './types';
 
@@ -28,6 +31,7 @@ export function emptyData(): AppData {
     medications: [],
     doseLogs: [],
     checkIns: [],
+    moodLogs: [],
     records: [],
     expenses: [],
     facilities: [],
@@ -73,6 +77,8 @@ interface Store {
   logDose: (medId: string, date: string, time: string, status: DoseStatus | null) => void;
   // other entities
   addCheckIn: (c: Omit<CheckIn, 'id' | 'at' | 'date'>) => CheckIn;
+  addMood: (m: Omit<MoodLog, 'id' | 'at' | 'date'>) => MoodLog;
+  importProfile: (bundle: SanovaBundle, asSelf: boolean, relationship?: string) => string;
   saveRecord: (r: Omit<HealthRecord, 'id' | 'createdAt'> & { id?: string }) => void;
   removeRecord: (id: string) => void;
   saveExpense: (e: Omit<Expense, 'id' | 'createdAt'> & { id?: string }) => void;
@@ -147,6 +153,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           members: d.members.filter((m) => m.id !== id),
           medications: d.medications.filter((x) => x.memberId !== id),
           checkIns: d.checkIns.filter((x) => x.memberId !== id),
+          moodLogs: d.moodLogs.filter((x) => x.memberId !== id),
+          expenses: d.expenses.filter((x) => x.memberId !== id),
           records: d.records.filter((x) => x.memberId !== id),
         })),
       saveContact: (c) => update((d) => ({ ...d, contacts: upsert(d.contacts, { ...c, id: c.id ?? uid('c_') }) })),
@@ -165,6 +173,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const entry: CheckIn = { ...c, id: uid('ci_'), at: now.toISOString(), date: toDateKey(now) };
         update((d) => ({ ...d, checkIns: [...d.checkIns, entry] }));
         return entry;
+      },
+      addMood: (m) => {
+        const now = new Date();
+        const entry: MoodLog = { ...m, id: uid('mo_'), at: now.toISOString(), date: toDateKey(now) };
+        update((d) => ({ ...d, moodLogs: [...d.moodLogs, entry] }));
+        return entry;
+      },
+      importProfile: (bundle, asSelf, relationship) => {
+        const r = importBundle(latest.current, bundle, asSelf, relationship);
+        const uris = writeImportedPhotos(r.photos);
+        update(() => ({
+          ...r.data,
+          records: r.data.records.map((x) => (uris[x.id] ? { ...x, imageUri: uris[x.id] } : x)),
+        }));
+        return r.memberId;
       },
       saveRecord: (r) =>
         update((d) => ({

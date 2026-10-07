@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native';
 import { EMERGENCY_NUMBERS } from '../data/emergency';
 import { SEED_FACILITIES } from '../data/facilities';
 import { GUIDES } from '../data/firstAid';
@@ -52,6 +52,15 @@ export default function Emergency() {
       {EMERGENCY_NUMBERS.map((n) => (
         <Button key={n.number} title={`Call ${n.number} — ${n.label}`} icon="call" variant="danger" onPress={() => call(n.number)} style={{ marginBottom: space(2) }} />
       ))}
+
+      <Pressable onPress={() => router.push('/support')} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.mindSoft, borderRadius: 14, padding: space(3), marginTop: space(1) }}>
+        <Text style={{ fontSize: 22 }}>💜</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: colors.mind, fontWeight: '800', fontSize: 15 }}>Not a physical emergency?</Text>
+          <Text style={type.small}>If you're not okay emotionally — talk to a counsellor, a friend, or Sanova.</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.mind} />
+      </Pressable>
 
       <SectionTitle>Your location</SectionTitle>
       <Card>

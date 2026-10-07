@@ -11,6 +11,7 @@ export default function More() {
     {
       title: 'Emergency',
       items: [
+        { icon: 'heart', color: colors.mind, title: "I'm not okay", subtitle: 'Talk to a counsellor, a friend or Sanova', href: '/support' },
         { icon: 'alert-circle', color: colors.danger, title: 'SOS', subtitle: 'Share location and call for help', href: '/emergency' },
         { icon: 'bandage', color: colors.danger, title: 'First aid guides', subtitle: 'Works offline', href: '/first-aid' },
         { icon: 'location', title: 'Nearby facilities', subtitle: 'Hospitals, clinics, pharmacies', href: '/facilities' },
@@ -28,6 +29,7 @@ export default function More() {
     {
       title: 'Account',
       items: [
+        { icon: 'share-social', title: 'Share or transfer health info', subtitle: 'Summary for a doctor, or move a profile to another phone', href: '/share' },
         { icon: 'person-circle', title: 'Profile & emergency contacts', subtitle: `${data.contacts.length} contact${data.contacts.length === 1 ? '' : 's'}`, href: '/profile' },
         { icon: 'settings', color: colors.muted, title: 'Settings', subtitle: 'App lock, reminders, your data', href: '/settings' },
       ],
@@ -49,7 +51,7 @@ export default function More() {
           </Card>
         </View>
       ))}
-      <Text style={[type.small, { textAlign: 'center', marginTop: space(4) }]}>Sanova 0.2 · Made for Uganda</Text>
+      <Text style={[type.small, { textAlign: 'center', marginTop: space(4) }]}>Sanova 0.3 · Made for Uganda</Text>
     </Screen>
   );
 }

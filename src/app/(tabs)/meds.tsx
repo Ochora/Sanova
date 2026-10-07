@@ -102,7 +102,7 @@ export default function Meds() {
             ))}
           </View>
         </View>
-        <Button small variant="ghost" icon="share-social" title="Share summary with family or doctor" onPress={shareSummary} style={{ alignSelf: 'flex-start', marginTop: space(2), paddingHorizontal: 0 }} />
+        <Button small variant="ghost" icon="share-social" title="Share with family, doctor or a contact" onPress={() => router.push({ pathname: '/share', params: memberId ? { memberId } : {} })} style={{ alignSelf: 'flex-start', marginTop: space(2), paddingHorizontal: 0 }} />
       </Card>
 
       <SectionTitle>Today · {formatDate(today)}</SectionTitle>

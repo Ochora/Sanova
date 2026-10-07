@@ -9,7 +9,7 @@ import { EMERGENCY_NUMBERS } from '../data/emergency';
 import { endDate } from '../lib/adherence';
 import { toDateKey } from '../lib/dates';
 import { call } from '../lib/emergency';
-import { cancelIds, setupChannels } from '../lib/notifications';
+import { cancelIds, scheduleCheckInReminder, setupChannels } from '../lib/notifications';
 import { StoreProvider, useStore } from '../lib/store';
 import { Button } from '../ui/components';
 import { colors, space, type } from '../ui/theme';
@@ -24,6 +24,7 @@ function ReminderMaintenance() {
       const kind = resp.notification.request.content.data?.kind;
       if (kind === 'med') router.push('/meds');
       else if (kind === 'checkin') router.push('/checkin');
+      else if (kind === 'mind') router.push({ pathname: '/checkin', params: { mode: 'mind' } });
     });
     return () => sub.remove();
   }, []);
@@ -32,6 +33,12 @@ function ReminderMaintenance() {
   useEffect(() => {
     if (!ready || done.current) return;
     done.current = true;
+    // Refresh daily check-in reminders (adds the evening mind review for people upgrading).
+    if (data.onboarded && data.settings.remindersEnabled) {
+      Notifications.getPermissionsAsync()
+        .then((p) => (p.granted ? scheduleCheckInReminder(true) : undefined))
+        .catch(() => {});
+    }
     const today = toDateKey();
     const finished = data.medications.filter((m) => {
       const end = endDate(m);
@@ -153,6 +160,10 @@ export default function RootLayout() {
             <Stack.Screen name="profile" options={{ title: 'Profile & contacts' }} />
             <Stack.Screen name="settings" options={{ title: 'Settings' }} />
             <Stack.Screen name="achievements" options={{ title: 'Streaks & badges' }} />
+            <Stack.Screen name="support" options={{ title: "I'm not okay", headerStyle: { backgroundColor: colors.mindSoft }, headerTintColor: colors.mind }} />
+            <Stack.Screen name="breathe" options={{ title: 'Calm down together' }} />
+            <Stack.Screen name="companion" options={{ title: 'Chat with Sanova', headerStyle: { backgroundColor: colors.mindSoft }, headerTintColor: colors.mind }} />
+            <Stack.Screen name="share" options={{ title: 'Share & transfer', presentation: 'modal' }} />
           </Stack>
         </LockGate>
       </StoreProvider>

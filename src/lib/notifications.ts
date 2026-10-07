@@ -74,16 +74,24 @@ export async function scheduleMedication(med: Medication, member: Member | undef
 
 export async function scheduleCheckInReminder(enabled: boolean) {
   const existing = await Notifications.getAllScheduledNotificationsAsync();
-  await cancelIds(existing.filter((n) => n.content.data?.kind === 'checkin').map((n) => n.identifier));
+  await cancelIds(existing.filter((n) => n.content.data?.kind === 'checkin' || n.content.data?.kind === 'mind').map((n) => n.identifier));
   if (!enabled) return;
   if (!(await ensurePermission())) return;
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: 'How are you feeling today?',
-      body: 'A 30-second check-in keeps your 🔥 health streak going.',
+      title: 'Good morning ☀️ How are you feeling?',
+      body: 'A quick body & mind check-in keeps your 🔥 health streak going.',
       data: { kind: 'checkin' },
     },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: 8, minute: 0, channelId: CHECKIN_CHANNEL },
+  });
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: '🌙 How was your day?',
+      body: 'Take one minute to look back on today — what went well, what weighed on you.',
+      data: { kind: 'mind' },
+    },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: 20, minute: 30, channelId: CHECKIN_CHANNEL },
   });
 }
 

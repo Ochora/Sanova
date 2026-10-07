@@ -129,6 +129,29 @@ export interface Settings {
   };
 }
 
+export type MoodKind = 'morning' | 'evening';
+
+export interface MoodLog {
+  id: string;
+  memberId: string;
+  at: string; // ISO
+  date: string; // YYYY-MM-DD
+  kind: MoodKind;
+  mood: number; // 1 (very low) .. 5 (great)
+  feelings: string[]; // e.g. 'anxious', 'calm'
+  sleep?: number; // morning: 1 (very poor) .. 5 (great)
+  energy?: number; // morning: 1..5
+  stress?: number; // evening: 1 (none) .. 5 (overwhelming)
+  intention?: string; // morning
+  wentWell?: string; // evening
+  gratitude?: string; // evening
+  note?: string;
+  /** PHQ-2 / GAD-2 answers (0..3 each) when the deeper check was done. */
+  screen?: { phq: [number, number]; gad: [number, number] };
+  /** User said they were having thoughts of self-harm. Drives support prompts only. */
+  safetyFlag?: boolean;
+}
+
 export interface AppData {
   version: 1;
   onboarded: boolean;
@@ -138,6 +161,7 @@ export interface AppData {
   medications: Medication[];
   doseLogs: DoseLog[];
   checkIns: CheckIn[];
+  moodLogs: MoodLog[];
   records: HealthRecord[];
   expenses: Expense[];
   facilities: Facility[]; // user-added only

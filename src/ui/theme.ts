@@ -17,6 +17,8 @@ export const colors = {
   successSoft: '#E3F3E9',
   warning: '#B4520B',
   warningSoft: '#FCE6D3',
+  mind: '#6B4EAD',
+  mindSoft: '#EEE8FA',
 };
 
 export const radius = { sm: 8, md: 14, lg: 20, pill: 999 };
