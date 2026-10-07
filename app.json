@@ -1,0 +1,73 @@
+{
+  "expo": {
+    "name": "Sanova",
+    "slug": "sanova",
+    "scheme": "sanova",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#F6F4EF",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0E6E5C"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "ug.sanova.app"
+    },
+    "android": {
+      "package": "ug.sanova.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#0E6E5C",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "POST_NOTIFICATIONS",
+        "SCHEDULE_EXACT_ALARM",
+        "USE_BIOMETRIC"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-status-bar",
+      "expo-sharing",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Sanova uses your location to share it with your emergency contacts during an SOS and to find the nearest health facilities."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Sanova uses the camera so you can photograph lab results, prescriptions and other health records.",
+          "photosPermission": "Sanova lets you add health records from your photo gallery."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0E6E5C"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Sanova can lock your health information behind your fingerprint or face."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
