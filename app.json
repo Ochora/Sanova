@@ -34,7 +34,10 @@
         "SCHEDULE_EXACT_ALARM",
         "USE_BIOMETRIC"
       ],
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -50,7 +53,8 @@
         "expo-image-picker",
         {
           "cameraPermission": "Sanova uses the camera so you can photograph lab results, prescriptions and other health records.",
-          "photosPermission": "Sanova lets you add health records from your photo gallery."
+          "photosPermission": "Sanova lets you add health records from your photo gallery.",
+          "microphonePermission": false
         }
       ],
       [

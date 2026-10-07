@@ -32,7 +32,13 @@ Sanova is the mobile app from the *Afya360 Product & Systems Design Document*, b
 
 Everything above works in Expo Go, including local medicine reminders.
 
-## Build a standalone APK (installable without Expo Go)
+## Get the APK automatically from GitHub (no setup needed)
+
+Every push to `main` runs `.github/workflows/android-apk.yml`, which builds a signed test APK (~15 minutes) and publishes it under **Releases** as `sanova-<version>-build<N>.apk`. Open the release on your phone, download the APK and tap it to install (allow "Install unknown apps" when asked). You can also re-run it any time from **Actions → Build Android APK → Run workflow**.
+
+The test APK is signed with the shared debug key — fine for testing, but create a proper upload key (or use EAS) before publishing to the Play Store.
+
+## Build a standalone APK yourself with EAS
 
 ```bash
 npm install -g eas-cli
