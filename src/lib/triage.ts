@@ -10,12 +10,22 @@ import { toDateKey } from './dates';
 import type { CheckIn, TriageLevel } from './types';
 
 export type SymptomSeverity = 'red' | 'orange' | 'yellow';
+export type SymptomArea = 'general' | 'head' | 'chest' | 'tummy' | 'skin';
+
+export const AREAS: { id: SymptomArea; label: string; emoji: string; prompt: string }[] = [
+  { id: 'general', label: 'Whole body', emoji: '🌡️', prompt: 'Fever, tired, aches' },
+  { id: 'head', label: 'Head & throat', emoji: '🤕', prompt: 'Headache, cold, sore throat' },
+  { id: 'chest', label: 'Chest & breathing', emoji: '🫁', prompt: 'Cough' },
+  { id: 'tummy', label: 'Tummy & toilet', emoji: '🤢', prompt: 'Diarrhoea, vomiting, pain' },
+  { id: 'skin', label: 'Skin & eyes', emoji: '🩹', prompt: 'Rash, itching, yellow eyes' },
+];
 
 export interface Symptom {
   id: string;
   label: string;
   severity: SymptomSeverity;
   group: 'danger' | 'common';
+  area?: SymptomArea;
   /** Only shown/considered when this is true for the person. */
   onlyFor?: 'child' | 'pregnant';
   keywords?: string[];
@@ -41,25 +51,25 @@ export const SYMPTOMS: Symptom[] = [
   { id: 'preg_movement', label: 'Baby moving less or not at all', severity: 'red', group: 'danger', onlyFor: 'pregnant' },
 
   // ---- Needs a health worker (ORANGE) ----
-  { id: 'fever', label: 'Fever / feeling hot', severity: 'orange', group: 'common', keywords: ['fever', 'hot body', 'feverish', 'omusujja'] },
-  { id: 'cough_2w', label: 'Cough for more than 2 weeks', severity: 'orange', group: 'common', keywords: ['cough for weeks', 'long cough'] },
-  { id: 'blood_stool', label: 'Blood in stool or urine', severity: 'orange', group: 'common', keywords: ['blood in stool', 'blood in urine', 'bloody diarrhoea', 'bloody diarrhea'] },
-  { id: 'yellow_eyes', label: 'Yellow eyes or skin', severity: 'orange', group: 'common', keywords: ['yellow eyes', 'jaundice'] },
-  { id: 'urine_pain', label: 'Pain when passing urine', severity: 'orange', group: 'common', keywords: ['pain when urinating', 'burning urine'] },
-  { id: 'severe_pain', label: 'Severe pain anywhere', severity: 'orange', group: 'common', keywords: ['severe pain', 'very painful'] },
-  { id: 'rash_fever', label: 'New rash', severity: 'orange', group: 'common', keywords: ['rash'] },
-  { id: 'dehydration', label: 'Very thirsty, little or no urine, sunken eyes', severity: 'orange', group: 'common', keywords: ['sunken eyes', 'no urine'] },
+  { id: 'fever', label: 'Fever / feeling hot', severity: 'orange', group: 'common', area: 'general', keywords: ['fever', 'hot body', 'feverish', 'omusujja'] },
+  { id: 'cough_2w', label: 'Cough for more than 2 weeks', severity: 'orange', group: 'common', area: 'chest', keywords: ['cough for weeks', 'long cough'] },
+  { id: 'blood_stool', label: 'Blood in stool or urine', severity: 'orange', group: 'common', area: 'tummy', keywords: ['blood in stool', 'blood in urine', 'bloody diarrhoea', 'bloody diarrhea'] },
+  { id: 'yellow_eyes', label: 'Yellow eyes or skin', severity: 'orange', group: 'common', area: 'skin', keywords: ['yellow eyes', 'jaundice'] },
+  { id: 'urine_pain', label: 'Pain when passing urine', severity: 'orange', group: 'common', area: 'tummy', keywords: ['pain when urinating', 'burning urine'] },
+  { id: 'severe_pain', label: 'Severe pain anywhere', severity: 'orange', group: 'common', area: 'general', keywords: ['severe pain', 'very painful'] },
+  { id: 'rash_fever', label: 'New rash', severity: 'orange', group: 'common', area: 'skin', keywords: ['rash'] },
+  { id: 'dehydration', label: 'Very thirsty, little or no urine, sunken eyes', severity: 'orange', group: 'common', area: 'general', keywords: ['sunken eyes', 'no urine'] },
 
   // ---- Mild (YELLOW) ----
-  { id: 'headache', label: 'Headache', severity: 'yellow', group: 'common', keywords: ['headache', 'omutwe'], homeCare: 'Rest in a quiet place, drink water, and use paracetamol only as directed on the pack.' },
-  { id: 'cough', label: 'Cough (recent)', severity: 'yellow', group: 'common', keywords: ['cough'], homeCare: 'Warm fluids, honey and lemon (not for babies under 1 year), and rest. Cover your cough.' },
-  { id: 'cold', label: 'Runny nose / sore throat', severity: 'yellow', group: 'common', keywords: ['runny nose', 'sore throat', 'flu', 'cold'], homeCare: 'Rest, warm fluids and salt-water gargles for a sore throat.' },
-  { id: 'diarrhoea', label: 'Diarrhoea (no blood)', severity: 'yellow', group: 'common', keywords: ['diarrhoea', 'diarrhea', 'running stomach'], homeCare: 'Drink ORS after every loose stool. Children: give ORS and zinc and keep breastfeeding.' },
-  { id: 'vomiting', label: 'Nausea or vomiting (keeping fluids down)', severity: 'yellow', group: 'common', keywords: ['nausea', 'vomit'], homeCare: 'Take small, frequent sips of clean water or ORS. Eat light food when you can.' },
-  { id: 'body_aches', label: 'Body aches / joint pain', severity: 'yellow', group: 'common', keywords: ['body aches', 'joint pain', 'body pain'], homeCare: 'Rest and stay hydrated. Body aches with fever need a malaria test.' },
-  { id: 'fatigue', label: 'Tired / weak', severity: 'yellow', group: 'common', keywords: ['tired', 'weak', 'fatigue', 'no energy', 'amaanyi'], homeCare: 'Rest, eat regular meals and drink water. Tiredness lasting days needs a check-up.' },
-  { id: 'stomach', label: 'Mild stomach pain', severity: 'yellow', group: 'common', keywords: ['stomach ache', 'stomach pain', 'abdominal'], homeCare: 'Eat light food and drink water. Get checked if pain becomes severe or lasts more than a day.' },
-  { id: 'itch', label: 'Itching / mild skin irritation', severity: 'yellow', group: 'common', keywords: ['itch'], homeCare: 'Keep the skin clean and dry and avoid scratching.' },
+  { id: 'headache', label: 'Headache', severity: 'yellow', group: 'common', area: 'head', keywords: ['headache', 'omutwe'], homeCare: 'Rest in a quiet place, drink water, and use paracetamol only as directed on the pack.' },
+  { id: 'cough', label: 'Cough (recent)', severity: 'yellow', group: 'common', area: 'chest', keywords: ['cough'], homeCare: 'Warm fluids, honey and lemon (not for babies under 1 year), and rest. Cover your cough.' },
+  { id: 'cold', label: 'Runny nose / sore throat', severity: 'yellow', group: 'common', area: 'head', keywords: ['runny nose', 'sore throat', 'flu', 'cold'], homeCare: 'Rest, warm fluids and salt-water gargles for a sore throat.' },
+  { id: 'diarrhoea', label: 'Diarrhoea (no blood)', severity: 'yellow', group: 'common', area: 'tummy', keywords: ['diarrhoea', 'diarrhea', 'running stomach'], homeCare: 'Drink ORS after every loose stool. Children: give ORS and zinc and keep breastfeeding.' },
+  { id: 'vomiting', label: 'Nausea or vomiting (keeping fluids down)', severity: 'yellow', group: 'common', area: 'tummy', keywords: ['nausea', 'vomit'], homeCare: 'Take small, frequent sips of clean water or ORS. Eat light food when you can.' },
+  { id: 'body_aches', label: 'Body aches / joint pain', severity: 'yellow', group: 'common', area: 'general', keywords: ['body aches', 'joint pain', 'body pain'], homeCare: 'Rest and stay hydrated. Body aches with fever need a malaria test.' },
+  { id: 'fatigue', label: 'Tired / weak', severity: 'yellow', group: 'common', area: 'general', keywords: ['tired', 'weak', 'fatigue', 'no energy', 'amaanyi'], homeCare: 'Rest, eat regular meals and drink water. Tiredness lasting days needs a check-up.' },
+  { id: 'stomach', label: 'Mild stomach pain', severity: 'yellow', group: 'common', area: 'tummy', keywords: ['stomach ache', 'stomach pain', 'abdominal'], homeCare: 'Eat light food and drink water. Get checked if pain becomes severe or lasts more than a day.' },
+  { id: 'itch', label: 'Itching / mild skin irritation', severity: 'yellow', group: 'common', area: 'skin', keywords: ['itch'], homeCare: 'Keep the skin clean and dry and avoid scratching.' },
 ];
 
 export const SYMPTOM_BY_ID: Record<string, Symptom> = Object.fromEntries(SYMPTOMS.map((s) => [s.id, s]));

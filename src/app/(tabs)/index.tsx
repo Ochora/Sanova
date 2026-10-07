@@ -5,9 +5,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { dosesForDay } from '../../lib/adherence';
 import { formatTime12, greeting, toDateKey } from '../../lib/dates';
 import { useStore } from '../../lib/store';
-import { LEVEL_META } from '../../lib/triage';
-import { Button, Card, Notice, Pill, Screen, SectionTitle, type IconName } from '../../ui/components';
+import { checkInStreak, medicineStreak, streakMessage } from '../../lib/streaks';
+import { Button, Card, Notice, Screen, SectionTitle, type IconName } from '../../ui/components';
 import { SOSButton } from '../../ui/SOSButton';
+import { StreakChip, WeekDots } from '../../ui/Streak';
+
+const MOOD_EMOJI: Record<number, string> = { 1: '😣', 2: '🙁', 3: '😐', 4: '🙂', 5: '😄' };
 import { colors, radius, space, type } from '../../ui/theme';
 
 function seasonalTip(month: number): { title: string; body: string } {
@@ -35,6 +38,8 @@ export default function Home() {
   const memberName = (id: string) => data.members.find((m) => m.id === id);
 
   const myCheckIn = [...data.checkIns].reverse().find((c) => c.memberId === self?.id && c.date === today);
+  const streak = checkInStreak(data.checkIns, self?.id);
+  const medStreak = medicineStreak(data.medications.filter((m) => m.memberId === self?.id), data.doseLogs, now);
   const tip = seasonalTip(now.getMonth());
 
   const quick: { icon: IconName; label: string; href: string; color: string }[] = [
@@ -51,10 +56,33 @@ export default function Home() {
           <Text style={type.small}>{greeting(now)}</Text>
           <Text style={type.h1}>{firstName || 'Sanova'}</Text>
         </View>
+        <Pressable onPress={() => router.push('/achievements')} style={{ marginRight: space(2) }}>
+          <StreakChip streak={streak} />
+        </Pressable>
         <Pressable onPress={() => router.push('/profile')} style={styles.avatar}>
           <Ionicons name="person" size={20} color={colors.primary} />
         </Pressable>
       </View>
+
+      <Pressable onPress={() => router.push(streak.doneToday ? '/achievements' : '/checkin')} style={({ pressed }) => [styles.streakCard, pressed && { opacity: 0.9 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space(3), marginBottom: space(4) }}>
+          <Text style={{ fontSize: 34 }}>{streak.doneToday ? (myCheckIn ? MOOD_EMOJI[myCheckIn.feeling] : '✅') : '👋'}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.streakTitle}>
+              {streak.doneToday ? 'Checked in today!' : 'How are you feeling today?'}
+            </Text>
+            <Text style={styles.streakSub}>
+              {streak.doneToday
+                ? `🔥 ${streak.current}-day streak · ${streakMessage(streak.current)}`
+                : streak.atRisk
+                  ? `🔥 ${streak.current}-day streak — check in to keep it alive!`
+                  : '30 seconds a day builds your health streak 🔥'}
+            </Text>
+          </View>
+          {!streak.doneToday && <Ionicons name="chevron-forward" size={22} color="#fff" />}
+        </View>
+        <WeekDots streak={streak} light />
+      </Pressable>
 
       <Card style={{ alignItems: 'center', paddingVertical: space(6) }}>
         <SOSButton onTrigger={() => router.push('/emergency')} />
@@ -76,7 +104,9 @@ export default function Home() {
         </Notice>
       )}
 
-      <SectionTitle action={<Text style={styles.link} onPress={() => router.push('/meds')}>All</Text>}>Today's medicines</SectionTitle>
+      <SectionTitle action={<Text style={styles.link} onPress={() => router.push('/meds')}>All</Text>}>
+        {medStreak.hasMeds && medStreak.current > 0 ? `Today's medicines · 💊 ${medStreak.current}-day streak` : "Today's medicines"}
+      </SectionTitle>
       {doses.length === 0 ? (
         <Card onPress={() => router.push('/med-form')}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -107,31 +137,6 @@ export default function Home() {
               </View>
             );
           })}
-        </Card>
-      )}
-
-      <SectionTitle>Daily check-in</SectionTitle>
-      {myCheckIn ? (
-        <Card onPress={() => router.push('/checkin')}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={[styles.dot, { backgroundColor: LEVEL_META[myCheckIn.level].color }]} />
-            <View style={{ flex: 1 }}>
-              <Text style={type.h3}>Checked in today</Text>
-              <Text style={type.small}>Tap to check in again if anything changes.</Text>
-            </View>
-            <Pill label={LEVEL_META[myCheckIn.level].label} color={LEVEL_META[myCheckIn.level].color} bg={LEVEL_META[myCheckIn.level].bg} />
-          </View>
-        </Card>
-      ) : (
-        <Card onPress={() => router.push('/checkin')} style={{ backgroundColor: colors.primary, borderColor: colors.primary }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Ionicons name="chatbubble-ellipses" size={26} color="#fff" />
-            <View style={{ flex: 1 }}>
-              <Text style={[type.h3, { color: '#fff' }]}>How are you feeling today?</Text>
-              <Text style={[type.small, { color: '#CFE8E1' }]}>30-second check-in</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#fff" />
-          </View>
         </Card>
       )}
 
@@ -167,7 +172,9 @@ const styles = StyleSheet.create({
   link: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   doseRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: space(4) },
   doseBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-  dot: { width: 12, height: 12, borderRadius: 6 },
+  streakCard: { backgroundColor: colors.primary, borderRadius: radius.lg, padding: space(4), marginBottom: space(3) },
+  streakTitle: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  streakSub: { color: '#CFE8E1', fontSize: 13, marginTop: 2, lineHeight: 18 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space(3) },
   tile: {
     width: '47.8%',

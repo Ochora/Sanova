@@ -152,6 +152,7 @@ export default function RootLayout() {
             <Stack.Screen name="emergency-card" options={{ title: 'Emergency card' }} />
             <Stack.Screen name="profile" options={{ title: 'Profile & contacts' }} />
             <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+            <Stack.Screen name="achievements" options={{ title: 'Streaks & badges' }} />
           </Stack>
         </LockGate>
       </StoreProvider>

@@ -115,7 +115,7 @@ export default function SettingsScreen() {
 
       <SectionTitle>About</SectionTitle>
       <Card>
-        <Text style={type.h3}>Sanova 0.1 — test version</Text>
+        <Text style={type.h3}>Sanova 0.2 — test version</Text>
         <Text style={[type.small, { marginTop: 6 }]}>
           All information stays on this phone. Sanova provides health guidance, not diagnosis or treatment. In an emergency call 999 or 112. Always follow the advice of a qualified health worker.
         </Text>

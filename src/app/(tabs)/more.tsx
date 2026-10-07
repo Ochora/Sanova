@@ -20,6 +20,7 @@ export default function More() {
     {
       title: 'Family & money',
       items: [
+        { icon: 'flame', color: colors.accent, title: 'Streaks & badges', subtitle: 'Your check-in streak and rewards', href: '/achievements' },
         { icon: 'people', title: 'Family', subtitle: `${data.members.length} ${data.members.length === 1 ? 'person' : 'people'}`, href: '/family' },
         { icon: 'wallet', color: colors.warning, title: 'Health costs', subtitle: 'Track what you spend on care', href: '/expenses' },
       ],
@@ -48,7 +49,7 @@ export default function More() {
           </Card>
         </View>
       ))}
-      <Text style={[type.small, { textAlign: 'center', marginTop: space(4) }]}>Sanova 0.1 · Made for Uganda</Text>
+      <Text style={[type.small, { textAlign: 'center', marginTop: space(4) }]}>Sanova 0.2 · Made for Uganda</Text>
     </Screen>
   );
 }

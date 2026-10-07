@@ -80,7 +80,7 @@ export async function scheduleCheckInReminder(enabled: boolean) {
   await Notifications.scheduleNotificationAsync({
     content: {
       title: 'How are you feeling today?',
-      body: 'Take 30 seconds for your Sanova check-in.',
+      body: 'A 30-second check-in keeps your 🔥 health streak going.',
       data: { kind: 'checkin' },
     },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: 8, minute: 0, channelId: CHECKIN_CHANNEL },
