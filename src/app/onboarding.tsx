@@ -7,6 +7,7 @@ import { splitList, uid } from '../lib/id';
 import { ensurePermission, scheduleCheckInReminder } from '../lib/notifications';
 import { useStore } from '../lib/store';
 import { pickAndConfirmBundle } from '../ui/importFlow';
+import { SupportFields, type SupportValue } from '../ui/SupportFields';
 import type { Sex } from '../lib/types';
 import { Button, Chip, ChipRow, Field, Notice, Screen } from '../ui/components';
 import { colors, space, type } from '../ui/theme';
@@ -33,6 +34,7 @@ export default function Onboarding() {
   const [allergies, setAllergies] = useState('');
   const [blood, setBlood] = useState<string | undefined>();
   const [pregnant, setPregnant] = useState(false);
+  const [support, setSupport] = useState<SupportValue>({ disabilities: [], assistive: '', supportNeeds: '' });
   const [cName, setCName] = useState('');
   const [cPhone, setCPhone] = useState('');
   const [cRel, setCRel] = useState('');
@@ -65,12 +67,19 @@ export default function Onboarding() {
           conditions: splitList(conditions),
           allergies: splitList(allergies),
           pregnant: sex === 'female' ? pregnant : undefined,
+          disabilities: support.disabilities,
+          assistive: support.assistive.trim() || undefined,
+          supportNeeds: support.supportNeeds.trim() || undefined,
         },
       ],
       contacts: cName.trim() && cPhone.trim() ? [{ id: uid('c_'), name: cName.trim(), phone: cPhone.trim(), relationship: cRel.trim() || undefined }] : [],
     }));
     const granted = await ensurePermission();
     if (granted) await scheduleCheckInReminder(true);
+    if (sex === 'female' && pregnant) {
+      router.replace({ pathname: '/pregnancy/setup', params: { memberId: selfId, first: '1' } });
+      return;
+    }
     router.replace('/');
   };
 
@@ -172,8 +181,11 @@ export default function Onboarding() {
                   <Chip label="No" selected={!pregnant} onPress={() => setPregnant(false)} />
                   <Chip label="Yes" selected={pregnant} onPress={() => setPregnant(true)} />
                 </ChipRow>
+                {pregnant && <Text style={[type.small, { marginTop: 6 }]}>🤰 Congratulations! Next, Sanova can set up a week-by-week pregnancy guide for you.</Text>}
               </>
             )}
+            <View style={{ height: space(5) }} />
+            <SupportFields value={support} onChange={setSupport} />
           </View>
         )}
 

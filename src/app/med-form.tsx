@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { isActiveOn } from '../lib/adherence';
 import { formatTime12, isValidDateKey, isValidTime, normaliseTime, timeToMinutes, toDateKey } from '../lib/dates';
-import { allergyWarnings, interactionWarnings, medicationTips } from '../lib/drugs';
+import { allergyWarnings, interactionWarnings, medicationTips, pregnancyWarnings } from '../lib/drugs';
 import { ageInMonths, suggestDose, type DoseSuggestion } from '../lib/dosing';
 import { uid } from '../lib/id';
 import { cancelIds, scheduleMedication } from '../lib/notifications';
@@ -30,11 +30,11 @@ const DURATIONS: { label: string; days?: number }[] = [
 ];
 
 export default function MedForm() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, memberId: pMember, prescriber: pPrescriber, reason: pReason } = useLocalSearchParams<{ id?: string; memberId?: string; prescriber?: string; reason?: string }>();
   const { data, self, saveMedication, removeMedication } = useStore();
   const existing = data.medications.find((m) => m.id === id);
 
-  const [memberId, setMemberId] = useState<string | undefined>(existing?.memberId ?? self?.id);
+  const [memberId, setMemberId] = useState<string | undefined>(existing?.memberId ?? pMember ?? self?.id);
   const [name, setName] = useState(existing?.name ?? '');
   const [dose, setDose] = useState(existing?.dose ?? '');
   const [times, setTimes] = useState<string[]>(existing?.times ?? ['08:00']);
@@ -42,8 +42,8 @@ export default function MedForm() {
   const [startDate, setStartDate] = useState(existing?.startDate ?? toDateKey());
   const [durationDays, setDurationDays] = useState<number | undefined>(existing ? existing.durationDays : 7);
   const [customDays, setCustomDays] = useState('');
-  const [reason, setReason] = useState(existing?.reason ?? '');
-  const [prescriber, setPrescriber] = useState(existing?.prescriber ?? '');
+  const [reason, setReason] = useState(existing?.reason ?? pReason ?? '');
+  const [prescriber, setPrescriber] = useState(existing?.prescriber ?? pPrescriber ?? '');
   const [instructions, setInstructions] = useState(existing?.instructions ?? '');
   const [reminders, setReminders] = useState(existing ? existing.notificationIds.length > 0 || !isActiveOn(existing, toDateKey()) : data.settings.remindersEnabled);
   const [saving, setSaving] = useState(false);
@@ -53,8 +53,13 @@ export default function MedForm() {
 
   const warnings = useMemo(() => {
     if (name.trim().length < 3) return [];
-    return [...allergyWarnings(name, member?.allergies ?? []), ...interactionWarnings(name, others.map((o) => o.name))];
-  }, [name, member, others]);
+    const pregnant = !!member?.pregnant || data.pregnancies.some((p) => p.memberId === member?.id && p.status === 'active');
+    return [
+      ...allergyWarnings(name, member?.allergies ?? []),
+      ...(pregnant ? pregnancyWarnings(name) : []),
+      ...interactionWarnings(name, others.map((o) => o.name)),
+    ];
+  }, [name, member, others, data.pregnancies]);
   const tips = useMemo(() => (name.trim().length >= 3 ? medicationTips(name) : []), [name]);
   const ageMonths = member?.dob ? ageInMonths(member.dob) : undefined;
   const suggestion = useMemo(() => (name.trim().length >= 3 ? suggestDose(name, ageMonths) : undefined), [name, ageMonths]);

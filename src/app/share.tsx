@@ -15,7 +15,7 @@ export default function ShareScreen() {
   const params = useLocalSearchParams<{ memberId?: string }>();
   const { data, self } = useStore();
   const [memberId, setMemberId] = useState<string | undefined>(params.memberId ?? self?.id);
-  const [opts, setOpts] = useState<SummaryOptions>({ medicines: true, conditions: true, recentCheckIns: true, adherence: true });
+  const [opts, setOpts] = useState<SummaryOptions>({ medicines: true, conditions: true, recentCheckIns: true, adherence: true, visits: true });
   const [guardianPhone, setGuardianPhone] = useState('');
   const [includeMood, setIncludeMood] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -27,7 +27,7 @@ export default function ShareScreen() {
   const toggle = (k: keyof SummaryOptions, label: string, i: number) => (
     <View key={k}>
       {i > 0 && <Divider />}
-      <Row title={label} right={<Switch value={opts[k]} onValueChange={(v) => setOpts({ ...opts, [k]: v })} trackColor={{ true: colors.primary, false: colors.border }} />} />
+      <Row title={label} right={<Switch value={!!opts[k]} onValueChange={(v) => setOpts({ ...opts, [k]: v })} trackColor={{ true: colors.primary, false: colors.border }} />} />
     </View>
   );
 
@@ -72,6 +72,7 @@ export default function ShareScreen() {
         {toggle('medicines', 'Current medicines', 1)}
         {toggle('adherence', 'How well doses are being taken', 2)}
         {toggle('recentCheckIns', 'Recent check-ins', 3)}
+        {toggle('visits', 'Hospital visits & diagnoses', 4)}
       </Card>
       <Card style={{ backgroundColor: colors.bg }}>
         <Text style={[type.small, { color: colors.text, fontFamily: undefined }]}>{text}</Text>

@@ -25,7 +25,7 @@ export default function Profile() {
   return (
     <Screen>
       {self && (
-        <Card onPress={() => router.push({ pathname: '/member-form', params: { id: self.id } })}>
+        <Card onPress={() => router.push({ pathname: '/member/[id]', params: { id: self.id } })}>
           <Text style={type.h2}>{self.name}</Text>
           <Text style={type.small}>
             {[self.dob ? `${ageInYears(self.dob)} yrs` : null, self.sex, self.bloodGroup, data.profile.district].filter(Boolean).join(' · ') || 'Tap to complete your health profile'}
@@ -33,7 +33,7 @@ export default function Profile() {
           <Text style={[type.small, { marginTop: 6 }]}>
             Allergies: {self.allergies.length ? self.allergies.join(', ') : 'none recorded'} · Conditions: {self.conditions.length ? self.conditions.join(', ') : 'none recorded'}
           </Text>
-          <Text style={{ color: colors.primary, fontWeight: '700', marginTop: space(3) }}>Edit health profile →</Text>
+          <Text style={{ color: colors.primary, fontWeight: '700', marginTop: space(3) }}>Open my health profile →</Text>
         </Card>
       )}
 

@@ -10,6 +10,14 @@ export interface Member {
   conditions: string[];
   allergies: string[];
   pregnant?: boolean;
+  /** Disability / functional difficulty categories (see DISABILITIES). */
+  disabilities?: string[];
+  /** Assistive devices, e.g. wheelchair, white cane, hearing aid. */
+  assistive?: string;
+  /** How others should help or communicate, especially in an emergency. */
+  supportNeeds?: string;
+  insurance?: { provider: string; number?: string };
+  birthWeightKg?: number;
 }
 
 export interface EmergencyContact {
@@ -82,6 +90,7 @@ export interface HealthRecord {
   date: string;
   notes?: string;
   imageUri?: string;
+  visitId?: string;
   createdAt: string;
 }
 
@@ -126,6 +135,7 @@ export interface Settings {
     conditions: boolean;
     medications: boolean;
     contacts: boolean;
+    support: boolean;
   };
 }
 
@@ -152,6 +162,83 @@ export interface MoodLog {
   safetyFlag?: boolean;
 }
 
+export interface AncVisit {
+  id: string;
+  date: string;
+  facility?: string;
+  weightKg?: number;
+  bp?: string;
+  notes?: string;
+  nextDate?: string;
+}
+
+export interface Pregnancy {
+  id: string;
+  memberId: string;
+  lmp?: string;
+  edd: string; // expected delivery date
+  createdAt: string;
+  status: 'active' | 'delivered' | 'ended';
+  endedAt?: string;
+  ancVisits: AncVisit[];
+  checklist: string[]; // birth-plan items done
+  plannedFacility?: string;
+  delivery?: { date: string; place?: string; type?: 'normal' | 'caesarean' | 'assisted'; babyIds: string[] };
+  notificationIds: string[];
+}
+
+export interface GrowthEntry {
+  id: string;
+  date: string;
+  weightKg?: number;
+  heightCm?: number;
+  muacCm?: number;
+}
+
+export interface ChildCare {
+  vaccines: Record<string, string>; // vaccine visit id -> date given
+  growth: GrowthEntry[];
+  milestones: Record<string, string>; // milestone id -> date ticked
+  notificationIds: string[];
+}
+
+export type VisitKind = 'admission' | 'outpatient' | 'emergency' | 'other';
+
+export interface VisitUpdate {
+  id: string;
+  at: string;
+  date: string;
+  text: string;
+  by?: string;
+}
+
+export interface Doctor {
+  name: string;
+  role?: string;
+  phone?: string;
+}
+
+export interface Visit {
+  id: string;
+  memberId: string;
+  kind: VisitKind;
+  facility: string;
+  ward?: string;
+  dateIn: string;
+  dateOut?: string;
+  reason?: string;
+  diagnoses: string[];
+  doctors: Doctor[];
+  tests?: string;
+  treatment?: string;
+  notes?: string;
+  followUp?: string;
+  recordedBy?: string;
+  updates: VisitUpdate[];
+  createdAt: string;
+  notificationIds: string[];
+}
+
 export interface AppData {
   version: 1;
   onboarded: boolean;
@@ -162,6 +249,9 @@ export interface AppData {
   doseLogs: DoseLog[];
   checkIns: CheckIn[];
   moodLogs: MoodLog[];
+  pregnancies: Pregnancy[];
+  visits: Visit[];
+  childCare: Record<string, ChildCare>;
   records: HealthRecord[];
   expenses: Expense[];
   facilities: Facility[]; // user-added only

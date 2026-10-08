@@ -7,6 +7,7 @@ import { SEED_FACILITIES } from '../data/facilities';
 import { GUIDES } from '../data/firstAid';
 import { call, getLocation, sendSos, sosMessage, whatsapp, type Fix } from '../lib/emergency';
 import { directionsLink, distanceKm, estimateTravelMinutes, formatDistance, formatMinutes, mapsLink, searchNearbyLink } from '../lib/geo';
+import { supportLine } from '../lib/inclusion';
 import { useStore } from '../lib/store';
 import { Button, Card, Chip, ChipRow, Notice, Row, Screen, SectionTitle, Divider } from '../ui/components';
 import { colors, space, type } from '../ui/theme';
@@ -25,7 +26,7 @@ export default function Emergency() {
       setFix(f);
       setLocating(false);
       if (data.contacts.length) {
-        const r = await sendSos(data.contacts, sosMessage(self?.name ?? '', f));
+        const r = await sendSos(data.contacts, sosMessage(self?.name ?? '', f, supportLine(self)));
         if (alive) setSmsState(r);
       }
     })();
@@ -43,7 +44,7 @@ export default function Emergency() {
       .slice(0, 3);
   }, [fix, data.facilities]);
 
-  const message = sosMessage(self?.name ?? '', fix);
+  const message = sosMessage(self?.name ?? '', fix, supportLine(self));
   const urgentGuides = GUIDES.filter((g) => g.urgent).slice(0, 6);
 
   return (

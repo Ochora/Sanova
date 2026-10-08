@@ -9,7 +9,9 @@ import { adherence, isActiveOn } from './adherence';
 import { ageInYears, formatDate, formatTime12, toDateKey } from './dates';
 import { uid } from './id';
 import { LEVEL_META, SYMPTOM_BY_ID } from './triage';
-import type { AppData, CheckIn, DoseLog, EmergencyContact, Expense, HealthRecord, Medication, Member, MoodLog } from './types';
+import { disabilityLabels } from './inclusion';
+import { gestation } from './pregnancy';
+import type { AppData, CheckIn, ChildCare, DoseLog, EmergencyContact, Expense, HealthRecord, Medication, Member, MoodLog, Pregnancy, Visit } from './types';
 
 export const BUNDLE_FORMAT = 'sanova.profile';
 
@@ -31,6 +33,9 @@ export interface SanovaBundle {
   records: PortableRecord[];
   expenses: Expense[];
   contacts: EmergencyContact[];
+  pregnancies?: Pregnancy[];
+  visits?: Visit[];
+  childCare?: ChildCare;
 }
 
 export interface BundleOptions {
@@ -58,6 +63,9 @@ export function buildBundle(data: AppData, memberId: string, opts: BundleOptions
     moodLogs: opts.includeMood === false ? [] : data.moodLogs.filter((c) => c.memberId === memberId),
     records: data.records.filter((r) => r.memberId === memberId).map(({ imageUri, ...r }) => ({ ...r })),
     expenses: opts.includeExpenses === false ? [] : data.expenses.filter((e) => e.memberId === memberId),
+    pregnancies: data.pregnancies.filter((p) => p.memberId === memberId).map((p) => ({ ...p, notificationIds: [], delivery: p.delivery ? { ...p.delivery, babyIds: [] } : undefined })),
+    visits: data.visits.filter((v) => v.memberId === memberId).map((v) => ({ ...v, notificationIds: [] })),
+    childCare: data.childCare[memberId] ? { ...data.childCare[memberId], notificationIds: [] } : undefined,
     contacts: opts.guardian?.phone
       ? [{ id: uid('c_'), name: opts.guardian.name, phone: opts.guardian.phone, relationship: 'Parent / guardian' }]
       : [],
@@ -88,6 +96,9 @@ export function parseBundle(text: string): SanovaBundle {
     records: b.records ?? [],
     expenses: b.expenses ?? [],
     contacts: b.contacts ?? [],
+    pregnancies: b.pregnancies ?? [],
+    visits: b.visits ?? [],
+    childCare: b.childCare,
   };
 }
 
@@ -113,10 +124,12 @@ export function importBundle(data: AppData, bundle: SanovaBundle, asSelf: boolea
     ? [member, ...data.members.filter((m) => m.relationship !== 'self')]
     : [...data.members, member];
 
+  const visitMap = new Map<string, string>();
+  for (const v of bundle.visits ?? []) visitMap.set(v.id, uid('v_'));
   const records: HealthRecord[] = bundle.records.map(({ imageBase64, imageExt, ...r }) => {
     const id = uid('r_');
     if (imageBase64) photos.push({ recordId: id, base64: imageBase64, ext: imageExt || '.jpg' });
-    return { ...r, id, memberId };
+    return { ...r, id, memberId, visitId: r.visitId ? visitMap.get(r.visitId) : undefined };
   });
 
   const existingPhones = new Set(data.contacts.map((c) => c.phone.replace(/\D/g, '')));
@@ -144,11 +157,15 @@ export function importBundle(data: AppData, bundle: SanovaBundle, asSelf: boolea
       moodLogs: [...data.moodLogs, ...bundle.moodLogs.map((c) => ({ ...c, id: uid('mo_'), memberId }))],
       records: [...data.records, ...records],
       expenses: [...data.expenses, ...bundle.expenses.map((e) => ({ ...e, id: uid('e_'), memberId }))],
+      pregnancies: [...data.pregnancies, ...(bundle.pregnancies ?? []).map((p) => ({ ...p, id: uid('pg_'), memberId, notificationIds: [] }))],
+      visits: [...data.visits, ...(bundle.visits ?? []).map((v) => ({ ...v, id: visitMap.get(v.id)!, memberId, notificationIds: [] }))],
+      childCare: bundle.childCare ? { ...data.childCare, [memberId]: { ...bundle.childCare, notificationIds: [] } } : data.childCare,
     },
   };
 }
 
 export interface SummaryOptions {
+  visits?: boolean;
   medicines: boolean;
   conditions: boolean;
   recentCheckIns: boolean;
@@ -163,10 +180,18 @@ export function healthSummary(data: AppData, memberId: string, opts: SummaryOpti
   const lines: string[] = [`🩺 Health summary — ${m.name}`];
   const bits = [m.dob ? `${ageInYears(m.dob, today)} yrs` : null, m.sex, m.bloodGroup ? `Blood group ${m.bloodGroup}` : null].filter(Boolean);
   if (bits.length) lines.push(bits.join(' · '));
-  if (m.pregnant) lines.push('Currently pregnant');
+  const preg = data.pregnancies.find((p) => p.memberId === memberId && p.status === 'active');
+  if (preg) {
+    const g = gestation(preg.edd, today);
+    lines.push(`Pregnant — ${g.weeks} weeks ${g.days} days, due ${formatDate(preg.edd)}`);
+  } else if (m.pregnant) lines.push('Currently pregnant');
   if (opts.conditions) {
     lines.push(`Allergies: ${m.allergies.length ? m.allergies.join(', ') : 'none known'}`);
     if (m.conditions.length) lines.push(`Conditions: ${m.conditions.join(', ')}`);
+    const dis = disabilityLabels(m);
+    if (dis.length) lines.push(`Disability: ${dis.join(', ')}`);
+    if (m.assistive) lines.push(`Uses: ${m.assistive}`);
+    if (m.supportNeeds) lines.push(`Support needs: ${m.supportNeeds}`);
   }
   const meds = data.medications.filter((x) => x.memberId === memberId && isActiveOn(x, today));
   if (opts.medicines) {
@@ -179,6 +204,17 @@ export function healthSummary(data: AppData, memberId: string, opts: SummaryOpti
   if (opts.adherence && meds.length) {
     const a = adherence(meds, data.doseLogs, 7, now);
     if (a.rate !== null) lines.push(`Last 7 days: ${Math.round(a.rate * 100)}% of doses taken (${a.missed} missed).`);
+  }
+  if (opts.visits) {
+    const vs = data.visits.filter((v) => v.memberId === memberId).sort((a, b) => b.dateIn.localeCompare(a.dateIn)).slice(0, 3);
+    if (vs.length) {
+      lines.push('', '🏥 Recent hospital / clinic visits:');
+      for (const v of vs) {
+        const when = v.dateOut && v.dateOut !== v.dateIn ? `${formatDate(v.dateIn)} – ${formatDate(v.dateOut)}` : formatDate(v.dateIn);
+        lines.push(`• ${when}, ${v.facility}${v.diagnoses.length ? `: ${v.diagnoses.join(', ')}` : ''}${v.doctors[0] ? ` (Dr ${v.doctors[0].name.replace(/^dr\.?\s*/i, '')})` : ''}`);
+        if (v.treatment) lines.push(`  Treatment: ${v.treatment}`);
+      }
+    }
   }
   if (opts.recentCheckIns) {
     const recent = data.checkIns.filter((c) => c.memberId === memberId).slice(-3).reverse();

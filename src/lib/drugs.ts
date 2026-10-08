@@ -133,3 +133,21 @@ export function medicationTips(name: string): string[] {
     .map((i) => TIPS[i])
     .filter(Boolean);
 }
+
+/** Medicines that are usually avoided in pregnancy (a clinician may still decide to use them). */
+const PREGNANCY_CAUTION: Record<string, string> = {
+  doxycycline: 'Doxycycline is usually avoided in pregnancy (it can affect the baby’s bones and teeth).',
+  nsaid: 'Painkillers like ibuprofen and diclofenac are usually avoided in pregnancy, especially after 20 weeks. Paracetamol is usually preferred — ask the health worker.',
+  aspirin: 'Aspirin should only be taken in pregnancy if a health worker prescribed it for you.',
+  warfarin: 'Warfarin can harm the baby — tell your doctor straight away that you are pregnant.',
+  methotrexate: 'Methotrexate must not be taken in pregnancy — tell your doctor straight away.',
+  ciprofloxacin: 'Ciprofloxacin is usually avoided in pregnancy — check with the health worker.',
+  simvastatin: 'Statins like simvastatin are usually stopped during pregnancy — ask your doctor.',
+  fluconazole: 'Fluconazole (especially high or repeated doses) is usually avoided in pregnancy — ask the health worker.',
+};
+
+export function pregnancyWarnings(medName: string): DrugWarning[] {
+  return ingredientsOf(medName)
+    .filter((i) => PREGNANCY_CAUTION[i])
+    .map((i) => ({ severity: 'serious' as const, message: `🤰 ${PREGNANCY_CAUTION[i]}` }));
+}

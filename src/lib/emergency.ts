@@ -33,12 +33,12 @@ export async function getLocation(timeoutMs = 12000): Promise<Fix | null> {
   }
 }
 
-export function sosMessage(name: string, fix: Fix | null): string {
+export function sosMessage(name: string, fix: Fix | null, support?: string): string {
   const who = name || 'I';
   const loc = fix
     ? `Location: ${mapsLink(fix)}${fix.accuracy ? ` (±${Math.round(fix.accuracy)} m)` : ''}${fix.approximate ? ' — last known' : ''}`
     : 'Location unavailable — please call me.';
-  return `EMERGENCY: ${who} need${name ? 's' : ''} urgent help. ${loc}. Sent from the Sanova health app.`;
+  return `EMERGENCY: ${who} need${name ? 's' : ''} urgent help. ${loc}.${support ? ` Note: ${support}` : ''} Sent from the Sanova health app.`;
 }
 
 /** Opens the SMS composer pre-filled for all contacts. Returns 'sent' | 'cancelled' | 'unavailable'. */

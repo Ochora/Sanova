@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Image, Text, View } from 'react-native';
 import { isValidDateKey, toDateKey } from '../lib/dates';
@@ -14,7 +14,8 @@ import { colors, radius, space, type } from '../ui/theme';
 
 export default function RecordForm() {
   const { self, saveRecord } = useStore();
-  const [memberId, setMemberId] = useState<string | undefined>(self?.id);
+  const params = useLocalSearchParams<{ visitId?: string; memberId?: string }>();
+  const [memberId, setMemberId] = useState<string | undefined>(params.memberId ?? self?.id);
   const [imageUri, setImageUri] = useState<string | undefined>();
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<RecordCategory>('lab');
@@ -42,7 +43,7 @@ export default function RecordForm() {
     try {
       const id = uid('r_');
       const stored = imageUri ? persistImage(imageUri, id) : undefined;
-      saveRecord({ id, memberId, title: title.trim(), category, date, notes: notes.trim() || undefined, imageUri: stored });
+      saveRecord({ id, memberId, title: title.trim(), category, date, notes: notes.trim() || undefined, imageUri: stored, visitId: params.visitId });
       router.back();
     } catch (e) {
       Alert.alert('Could not save the photo', String(e));

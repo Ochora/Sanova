@@ -43,7 +43,7 @@ export default function Family() {
           });
 
         return (
-          <Card key={m.id} onPress={() => router.push({ pathname: '/member-form', params: { id: m.id } })}>
+          <Card key={m.id} onPress={() => router.push({ pathname: '/member/[id]', params: { id: m.id } })}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: colors.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 16 }}>{initials(m.name)}</Text>

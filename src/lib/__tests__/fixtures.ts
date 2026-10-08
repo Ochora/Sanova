@@ -20,13 +20,16 @@ export function emptyDataForTest(): AppData {
     ],
     checkIns: [{ id: 'c1', memberId: 'kid', at: '', date: '2026-10-07', feeling: 2, symptoms: ['fever'], level: 'orange' }],
     moodLogs: [{ id: 'mo', memberId: 'me', at: '', date: '2026-10-07', kind: 'morning', mood: 4, feelings: [] }],
+    pregnancies: [],
+    visits: [],
+    childCare: {},
     records: [{ id: 'r1', memberId: 'kid', title: 'Malaria RDT', category: 'lab', date: '2026-10-07', imageUri: 'file:///x.jpg', createdAt: '' }],
     expenses: [],
     facilities: [],
     settings: {
       lockEnabled: false,
       remindersEnabled: true,
-      cardFields: { dob: true, bloodGroup: true, allergies: true, conditions: true, medications: true, contacts: true },
+      cardFields: { dob: true, bloodGroup: true, allergies: true, conditions: true, medications: true, contacts: true, support: true },
     },
   };
 }

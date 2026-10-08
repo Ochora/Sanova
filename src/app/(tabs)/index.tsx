@@ -3,9 +3,12 @@ import { router } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { dosesForDay } from '../../lib/adherence';
-import { formatTime12, greeting, toDateKey } from '../../lib/dates';
+import { addDays, formatDate, formatTime12, greeting, toDateKey } from '../../lib/dates';
 import { useStore } from '../../lib/store';
 import { kindForNow } from '../../lib/mind';
+import { isUnderFive, nextVaccine } from '../../lib/childHealth';
+import { gestation, inPostnatal, nextAnc, postnatalDay, weekInfo } from '../../lib/pregnancy';
+import { admittedDay, isAdmitted } from '../../lib/visits';
 import { checkInStreak, medicineStreak, streakMessage } from '../../lib/streaks';
 import { Button, Card, Notice, Screen, SectionTitle, type IconName } from '../../ui/components';
 import { SOSButton } from '../../ui/SOSButton';
@@ -45,11 +48,40 @@ export default function Home() {
   const medStreak = medicineStreak(data.medications.filter((m) => m.memberId === self?.id), data.doseLogs, now);
   const tip = seasonalTip(now.getMonth());
 
+  // ---- Care plans: pregnancy, postnatal, children, hospital ----
+  type Plan = { key: string; emoji: string; title: string; sub: string; color: string; bg: string; go: () => void };
+  const plans: Plan[] = [];
+  for (const m of data.members) {
+    const first = m.relationship === 'self' ? 'You' : m.name.split(' ')[0];
+    const adm = data.visits.find((v) => v.memberId === m.id && isAdmitted(v));
+    if (adm) plans.push({ key: `adm-${adm.id}`, emoji: '🛏️', title: `${first === 'You' ? 'You are' : `${first} is`} in hospital · day ${admittedDay(adm)}`, sub: `${adm.facility} — add today's update`, color: colors.hospital, bg: colors.hospitalSoft, go: () => router.push({ pathname: '/visit/[id]', params: { id: adm.id } }) });
+    const preg = data.pregnancies.find((p) => p.memberId === m.id && p.status === 'active');
+    if (preg) {
+      const g = gestation(preg.edd, today);
+      const wi = weekInfo(g.weeks);
+      const na = nextAnc(preg, today);
+      plans.push({ key: `preg-${preg.id}`, emoji: wi.emoji, title: `${first === 'You' ? 'Week' : `${first} · week`} ${g.weeks} of pregnancy`, sub: `Baby is the size of ${wi.size}${na ? ` · next clinic ${na.due <= today ? 'due now' : formatDate(na.due)}` : ''}`, color: colors.mama, bg: colors.mamaSoft, go: () => router.push({ pathname: '/pregnancy/[id]', params: { id: preg.id } }) });
+    } else if (m.sex === 'female' && m.pregnant) {
+      plans.push({ key: `pregset-${m.id}`, emoji: '🤰', title: `Start ${first === 'You' ? 'your' : `${first}'s`} pregnancy guide`, sub: 'Week-by-week calendar, clinic reminders and a birth plan', color: colors.mama, bg: colors.mamaSoft, go: () => router.push({ pathname: '/pregnancy/setup', params: { memberId: m.id } }) });
+    }
+    const post = data.pregnancies.find((p) => p.memberId === m.id && inPostnatal(p, today));
+    if (post) plans.push({ key: `post-${post.id}`, emoji: '🤱', title: `Postnatal day ${postnatalDay(post.delivery!.date, today)} of 42`, sub: `${first === 'You' ? 'Your' : `${first}'s`} recovery and baby's first weeks`, color: colors.child, bg: colors.childSoft, go: () => router.push({ pathname: '/pregnancy/[id]', params: { id: post.id } }) });
+    if (m.dob && isUnderFive(m.dob, today)) {
+      const nv = nextVaccine(m.dob, data.childCare[m.id], today);
+      if (nv && (nv.state !== 'upcoming' || nv.due <= addDays(today, 14)))
+        plans.push({ key: `vac-${m.id}`, emoji: '💉', title: `${first}'s ${nv.visit.label} vaccines ${nv.state === 'overdue' ? 'are overdue' : nv.state === 'due' ? 'are due' : `on ${formatDate(nv.due)}`}`, sub: nv.visit.vaccines.slice(0, 3).join(', '), color: nv.state === 'overdue' ? colors.danger : colors.child, bg: nv.state === 'overdue' ? colors.dangerSoft : colors.childSoft, go: () => router.push({ pathname: '/child/[id]', params: { id: m.id } }) });
+    }
+  }
+  const RANK: Record<string, number> = { adm: 0, vac: 1, preg: 2, post: 3, pregset: 4 };
+  plans.sort((a, b) => (RANK[a.key.split('-')[0]] ?? 9) - (RANK[b.key.split('-')[0]] ?? 9));
+
   const quick: { icon: IconName; label: string; href: string; color: string }[] = [
     { icon: 'bandage', label: 'First aid', href: '/first-aid', color: colors.danger },
     { icon: 'location', label: 'Facilities', href: '/facilities', color: colors.primary },
     { icon: 'qr-code', label: 'Emergency card', href: '/emergency-card', color: '#6B4EAD' },
     { icon: 'wallet', label: 'Health costs', href: '/expenses', color: colors.warning },
+    { icon: 'medkit', label: 'Hospital visit', href: '/visit-form', color: colors.hospital },
+    { icon: 'people', label: 'Family', href: '/family', color: colors.child },
   ];
 
   return (
@@ -86,6 +118,21 @@ export default function Home() {
         </View>
         <WeekDots streak={streak} light />
       </Pressable>
+
+      {plans.length > 0 && (
+        <>
+          {plans.map((p) => (
+            <Pressable key={p.key} onPress={p.go} style={({ pressed }) => [styles.plan, { backgroundColor: p.bg }, pressed && { opacity: 0.9 }]}>
+              <Text style={{ fontSize: 28 }}>{p.emoji}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.planTitle, { color: p.color }]}>{p.title}</Text>
+                <Text style={styles.planSub} numberOfLines={2}>{p.sub}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={p.color} />
+            </Pressable>
+          ))}
+        </>
+      )}
 
       <Pressable
         onPress={() => router.push({ pathname: '/checkin', params: { mode: 'mind' } })}
@@ -195,6 +242,9 @@ const styles = StyleSheet.create({
   link: { color: colors.primary, fontWeight: '700', fontSize: 14 },
   doseRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: space(4) },
   doseBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  plan: { flexDirection: 'row', alignItems: 'center', gap: space(3), borderRadius: radius.lg, padding: space(4), marginBottom: space(2) },
+  planTitle: { fontSize: 15, fontWeight: '800' },
+  planSub: { fontSize: 13, color: colors.text, marginTop: 2 },
   mindCard: {
     flexDirection: 'row',
     alignItems: 'center',

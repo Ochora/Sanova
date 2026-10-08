@@ -16,6 +16,9 @@ import type {
   Medication,
   Member,
   MoodLog,
+  Pregnancy,
+  Visit,
+  ChildCare,
   Settings,
 } from './types';
 
@@ -32,15 +35,22 @@ export function emptyData(): AppData {
     doseLogs: [],
     checkIns: [],
     moodLogs: [],
+    pregnancies: [],
+    visits: [],
+    childCare: {},
     records: [],
     expenses: [],
     facilities: [],
     settings: {
       lockEnabled: false,
       remindersEnabled: true,
-      cardFields: { dob: true, bloodGroup: true, allergies: true, conditions: true, medications: true, contacts: true },
+      cardFields: { dob: true, bloodGroup: true, allergies: true, conditions: true, medications: true, contacts: true, support: true },
     },
   };
+}
+
+export function emptyChildCare(): ChildCare {
+  return { vaccines: {}, growth: [], milestones: {}, notificationIds: [] };
 }
 
 function migrate(raw: unknown): AppData {
@@ -86,6 +96,10 @@ interface Store {
   saveFacility: (f: Omit<Facility, 'id' | 'custom'>) => void;
   removeFacility: (id: string) => void;
   setSettings: (s: Partial<Settings>) => void;
+  savePregnancy: (p: Pregnancy) => void;
+  saveVisit: (v: Visit) => void;
+  removeVisit: (id: string) => void;
+  updateChildCare: (memberId: string, fn: (c: ChildCare) => ChildCare) => void;
   resetAll: () => Promise<void>;
 }
 
@@ -154,6 +168,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           medications: d.medications.filter((x) => x.memberId !== id),
           checkIns: d.checkIns.filter((x) => x.memberId !== id),
           moodLogs: d.moodLogs.filter((x) => x.memberId !== id),
+          pregnancies: d.pregnancies.filter((x) => x.memberId !== id),
+          visits: d.visits.filter((x) => x.memberId !== id),
+          childCare: Object.fromEntries(Object.entries(d.childCare).filter(([k]) => k !== id)),
           expenses: d.expenses.filter((x) => x.memberId !== id),
           records: d.records.filter((x) => x.memberId !== id),
         })),
@@ -204,6 +221,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       saveFacility: (f) =>
         update((d) => ({ ...d, facilities: [...d.facilities, { ...f, id: uid('f_'), custom: true }] })),
       removeFacility: (id) => update((d) => ({ ...d, facilities: d.facilities.filter((f) => f.id !== id) })),
+      savePregnancy: (p) => update((d) => ({ ...d, pregnancies: upsert(d.pregnancies, p) })),
+      saveVisit: (v) => update((d) => ({ ...d, visits: upsert(d.visits, v) })),
+      removeVisit: (id) =>
+        update((d) => ({
+          ...d,
+          visits: d.visits.filter((v) => v.id !== id),
+          records: d.records.map((r) => (r.visitId === id ? { ...r, visitId: undefined } : r)),
+        })),
+      updateChildCare: (memberId, fn) =>
+        update((d) => ({ ...d, childCare: { ...d.childCare, [memberId]: fn(d.childCare[memberId] ?? emptyChildCare()) } })),
       setSettings: (s) => update((d) => ({ ...d, settings: { ...d.settings, ...s } })),
       resetAll: async () => {
         if (saveTimer.current) clearTimeout(saveTimer.current);

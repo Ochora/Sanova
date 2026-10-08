@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Share, Switch, Text, View } from 'react-native';
 import { isActiveOn } from '../lib/adherence';
 import { ageInYears, formatDate, toDateKey } from '../lib/dates';
+import { disabilityLabels, hasSupportInfo, supportLine } from '../lib/inclusion';
 import { useStore } from '../lib/store';
 import type { Settings } from '../lib/types';
 import { Button, Card, Divider, Notice, Row, Screen, SectionTitle } from '../ui/components';
@@ -17,6 +18,7 @@ const FIELD_LABELS: Record<FieldKey, string> = {
   conditions: 'Conditions',
   medications: 'Current medicines',
   contacts: 'Emergency contacts',
+  support: 'Disability & support needs',
 };
 
 export default function EmergencyCard() {
@@ -38,6 +40,14 @@ export default function EmergencyCard() {
     if (f.allergies) lines.push(`ALLERGIES: ${m.allergies.length ? m.allergies.join(', ') : 'None known'}`);
     if (f.conditions && m.conditions.length) lines.push(`Conditions: ${m.conditions.join(', ')}`);
     if (f.medications && meds.length) lines.push(`Medicines: ${meds.map((x) => `${x.name} ${x.dose}`).join('; ')}`);
+    if (f.support && hasSupportInfo(m)) {
+      const dis = disabilityLabels(m);
+      if (dis.length) lines.push(`Disability: ${dis.join(', ')}`);
+      if (m.assistive) lines.push(`Uses: ${m.assistive}`);
+      const sl = supportLine(m);
+      if (sl) lines.push(`HOW TO HELP: ${sl}`);
+    }
+    if (m.insurance?.provider) lines.push(`Insurance: ${m.insurance.provider}${m.insurance.number ? ` ${m.insurance.number}` : ''}`);
     if (f.contacts && data.contacts.length) lines.push(`Emergency contact: ${data.contacts.map((c) => `${c.name} ${c.phone}`).join('; ')}`);
     lines.push(`Updated: ${today}`);
     return lines.join('\n');
@@ -75,6 +85,17 @@ export default function EmergencyCard() {
           <>
             <Divider />
             <Row icon="medkit" title={meds.map((x) => x.name).join(', ')} subtitle="Current medicines" />
+          </>
+        ) : null}
+        {f.support && hasSupportInfo(m) ? (
+          <>
+            <Divider />
+            <Row
+              icon="accessibility"
+              iconColor={colors.primary}
+              title={[...disabilityLabels(m), m.assistive].filter(Boolean).join(' · ') || 'Support needs'}
+              subtitle={supportLine(m) || 'Disability & support'}
+            />
           </>
         ) : null}
         {f.dob && m.dob ? (

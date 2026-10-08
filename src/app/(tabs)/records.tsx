@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { formatDate } from '../../lib/dates';
+import { admittedDay, isAdmitted, VISIT_EMOJI } from '../../lib/visits';
 import { RECORD_CAT, RECORD_CATEGORIES } from '../../lib/records';
 import { useStore } from '../../lib/store';
 import type { RecordCategory } from '../../lib/types';
@@ -14,6 +15,10 @@ export default function Records() {
   const { data } = useStore();
   const [memberId, setMemberId] = useState<string | undefined>();
   const [cat, setCat] = useState<RecordCategory | undefined>();
+  const [view, setView] = useState<'visits' | 'docs'>('visits');
+  const visits = data.visits
+    .filter((v) => !memberId || v.memberId === memberId)
+    .sort((a, b) => Number(isAdmitted(b)) - Number(isAdmitted(a)) || b.dateIn.localeCompare(a.dateIn));
 
   const list = data.records
     .filter((r) => (!memberId || r.memberId === memberId) && (!cat || r.category === cat))
@@ -31,7 +36,53 @@ export default function Records() {
         </View>
       </Card>
 
+      <View style={styles.seg}>
+        {([
+          ['visits', `🏥 Hospital visits${data.visits.length ? ` (${data.visits.length})` : ''}`],
+          ['docs', `📄 Documents${data.records.length ? ` (${data.records.length})` : ''}`],
+        ] as const).map(([k, label]) => (
+          <Pressable key={k} onPress={() => setView(k)} style={[styles.segBtn, view === k && styles.segOn]}>
+            <Text style={[styles.segText, view === k && { color: '#fff' }]}>{label}</Text>
+          </Pressable>
+        ))}
+      </View>
       <MemberPicker value={memberId} onChange={setMemberId} allowAll />
+
+      {view === 'visits' ? (
+        <>
+          <Button title="Record a hospital or clinic visit" icon="add" onPress={() => router.push({ pathname: '/visit-form', params: memberId ? { memberId } : {} })} style={{ marginBottom: space(4), backgroundColor: colors.hospital, borderColor: colors.hospital }} />
+          {visits.length === 0 ? (
+            <Empty
+              icon="medkit"
+              title="No hospital visits yet"
+              body="When someone is ill or admitted, record the diagnosis, the doctors' names, tests and treatment — and add daily updates. A caregiver can record it for the patient."
+            />
+          ) : (
+            visits.map((v) => {
+              const owner = data.members.find((m) => m.id === v.memberId);
+              const admitted = isAdmitted(v);
+              return (
+                <Pressable key={v.id} onPress={() => router.push({ pathname: '/visit/[id]', params: { id: v.id } })}>
+                  <Card style={[{ flexDirection: 'row', gap: 12, alignItems: 'center' }, admitted && { borderColor: colors.hospital, borderWidth: 2 }]}>
+                    <View style={[styles.thumb, { backgroundColor: colors.hospitalSoft, alignItems: 'center', justifyContent: 'center' }]}>
+                      <Text style={{ fontSize: 26 }}>{VISIT_EMOJI[v.kind]}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={type.h3} numberOfLines={1}>{v.diagnoses[0] ?? v.reason ?? v.facility}</Text>
+                      <Text style={type.small} numberOfLines={1}>
+                        {v.facility} · {admitted ? `in hospital, day ${admittedDay(v)}` : formatDate(v.dateIn)}
+                      </Text>
+                      {owner && owner.relationship !== 'self' ? <Text style={type.small}>{owner.name}</Text> : null}
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.faint} />
+                  </Card>
+                </Pressable>
+              );
+            })
+          )}
+        </>
+      ) : (
+      <>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 12 }}>
         <Chip label="All types" selected={!cat} onPress={() => setCat(undefined)} />
         {RECORD_CATEGORIES.map((c) => (
@@ -39,7 +90,7 @@ export default function Records() {
         ))}
       </ScrollView>
 
-      <Button title="Add a record" icon="camera" onPress={() => router.push('/record-form')} style={{ marginBottom: space(4) }} />
+      <Button title="Add a document or photo" icon="camera" onPress={() => router.push({ pathname: '/record-form', params: memberId ? { memberId } : {} })} style={{ marginBottom: space(4) }} />
 
       {list.length === 0 ? (
         <Empty
@@ -74,10 +125,16 @@ export default function Records() {
           );
         })
       )}
+      </>
+      )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  seg: { flexDirection: 'row', backgroundColor: colors.card, borderRadius: radius.pill, padding: 4, marginBottom: space(3), borderWidth: 1, borderColor: colors.border },
+  segBtn: { flex: 1, paddingVertical: 10, borderRadius: radius.pill, alignItems: 'center' },
+  segOn: { backgroundColor: colors.hospital },
+  segText: { fontWeight: '700', color: colors.muted, fontSize: 13 },
   thumb: { width: 56, height: 56, borderRadius: radius.md, backgroundColor: colors.bg },
 });

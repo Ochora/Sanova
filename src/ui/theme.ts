@@ -19,6 +19,12 @@ export const colors = {
   warningSoft: '#FCE6D3',
   mind: '#6B4EAD',
   mindSoft: '#EEE8FA',
+  mama: '#B83D74',
+  mamaSoft: '#FBE6EF',
+  child: '#2563A8',
+  childSoft: '#E1ECF8',
+  hospital: '#0F6C8C',
+  hospitalSoft: '#DDF0F6',
 };
 
 export const radius = { sm: 8, md: 14, lg: 20, pill: 999 };

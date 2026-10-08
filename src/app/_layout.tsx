@@ -21,9 +21,13 @@ function ReminderMaintenance() {
   useEffect(() => {
     setupChannels().catch(() => {});
     const sub = Notifications.addNotificationResponseReceivedListener((resp) => {
-      const kind = resp.notification.request.content.data?.kind;
+      const data = resp.notification.request.content.data;
+      const kind = data?.kind;
       if (kind === 'med') router.push('/meds');
       else if (kind === 'checkin') router.push('/checkin');
+      else if (kind === 'pregnancy' && typeof data?.id === 'string') router.push({ pathname: '/pregnancy/[id]', params: { id: data.id } });
+      else if (kind === 'child' && typeof data?.id === 'string') router.push({ pathname: '/child/[id]', params: { id: data.id } });
+      else if (kind === 'visit' && typeof data?.id === 'string') router.push({ pathname: '/visit/[id]', params: { id: data.id } });
       else if (kind === 'mind') router.push({ pathname: '/checkin', params: { mode: 'mind' } });
     });
     return () => sub.remove();
@@ -164,6 +168,13 @@ export default function RootLayout() {
             <Stack.Screen name="breathe" options={{ title: 'Calm down together' }} />
             <Stack.Screen name="companion" options={{ title: 'Chat with Sanova', headerStyle: { backgroundColor: colors.mindSoft }, headerTintColor: colors.mind }} />
             <Stack.Screen name="share" options={{ title: 'Share & transfer', presentation: 'modal' }} />
+            <Stack.Screen name="member/[id]" options={{ title: 'Health profile' }} />
+            <Stack.Screen name="pregnancy/setup" options={{ title: 'Pregnancy journey', headerStyle: { backgroundColor: colors.mamaSoft }, headerTintColor: colors.mama }} />
+            <Stack.Screen name="pregnancy/[id]" options={{ title: 'Pregnancy', headerStyle: { backgroundColor: colors.mamaSoft }, headerTintColor: colors.mama }} />
+            <Stack.Screen name="pregnancy/born" options={{ title: 'Baby is born', headerStyle: { backgroundColor: colors.childSoft }, headerTintColor: colors.child }} />
+            <Stack.Screen name="child/[id]" options={{ title: 'Child health', headerStyle: { backgroundColor: colors.childSoft }, headerTintColor: colors.child }} />
+            <Stack.Screen name="visit-form" options={{ title: 'Hospital visit', presentation: 'modal' }} />
+            <Stack.Screen name="visit/[id]" options={{ title: 'Hospital visit', headerStyle: { backgroundColor: colors.hospitalSoft }, headerTintColor: colors.hospital }} />
           </Stack>
         </LockGate>
       </StoreProvider>
